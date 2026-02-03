@@ -22,8 +22,8 @@ import { useEffect as useEf } from 'react';
     (async () => {
       try {
         const mod = await import('swiper');
-        const Autoplay = (mod as any).Autoplay || (await import('swiper/modules/autoplay/autoplay')).Autoplay;
-        const Pagination = (mod as any).Pagination || (await import('swiper/modules/pagination/pagination')).Pagination;
+        const Autoplay = (mod as any).Autoplay || (await import('swiper/modules/autoplay')).Autoplay;
+        const Pagination = (mod as any).Pagination || (await import('swiper/modules/pagination')).Pagination;
         const SwiperCore = (mod as any).default || mod;
         if (mounted && SwiperCore && Autoplay && Pagination) {
           SwiperCore.use([Autoplay, Pagination]);

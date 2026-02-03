@@ -60,8 +60,8 @@ function DynamicSwiper({ images, duration }: { images: any[]; duration?: number 
         const SwiperSlide = mod.SwiperSlide;
         const core = await import('swiper');
         const SwiperCore = core.default || core;
-        const Autoplay = (core as any).Autoplay || (await import('swiper/modules/autoplay/autoplay')).Autoplay;
-        const FreeMode = (core as any).FreeMode || (await import('swiper/modules/free-mode/free-mode')).FreeMode;
+        const Autoplay = (core as any).Autoplay || (await import('swiper/modules/autoplay')).Autoplay;
+        const FreeMode = (core as any).FreeMode || (await import('swiper/modules/free-mode')).FreeMode;
         if (SwiperCore && Autoplay && FreeMode) {
           SwiperCore.use([Autoplay, FreeMode]);
         }
