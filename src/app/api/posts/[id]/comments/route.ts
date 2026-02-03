@@ -42,7 +42,7 @@ export async function POST(
     // const comment = await db.comment.create({
     //   data: {
     //     content: content.trim(),
-    //     postId: postId,
+    //     postId: params.id,
     //     authorId: session.user.id
     //   },
     //   include: {
