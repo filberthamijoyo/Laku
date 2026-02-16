@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ForYouMode } from '@/components/explore/modes/ForYouMode';
 import { VideoMode } from '@/components/explore/modes/VideoMode';
@@ -15,52 +15,91 @@ import { InfiniteProductFeed } from '@/components/shared/InfiniteProductFeed';
 import { MOCK_PRODUCTS } from '@/lib/mock-data';
 import { AppHeader } from '@/components/layouts/AppHeader';
 import { productsData } from '@/lib/products-data';
+import { ScrollVideoFeed } from '@/components/scroll/ScrollVideoFeed';
+import { mockLiveShoppingVideos } from '@/lib/mock-live-shopping-data';
+import { useBottomNav } from '@/components/layouts/BottomNavContext';
 import type { Product } from '@/types';
 
+// Products to EXCLUDE from market (these are posts only)
+const POST_ONLY_SLUGS = [
+  'lulu-combo',             // Lululemon combo - in explore feed as post
+  'prada-mm-stanley-combo', // Luxury combo - in explore feed as post
+];
+
+// Products that should NOT have tall images (use normal aspect ratio)
+const NORMAL_IMAGE_PRODUCTS = ['mm-tabi-flats'];
+
 // Transform productsData to Product type for market feed
-const getMarketProducts = (): Product[] => {
-  return Object.values(productsData).map((product) => ({
-    id: product.id,
-    slug: product.slug,
-    name: product.name,
-    price: product.price,
-    originalPrice: product.originalPrice,
-    discount: product.originalPrice
-      ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-      : 0,
-    image: product.productImages[0],
-    images: product.productImages.map((url) => ({ url })),
-    imageTall: true,
-    isOfficial: true,
-    category: product.productData.category,
-    description: product.description,
-    stock: product.productData.stock,
-    rating: product.productData.rating,
-    reviewCount: product.productData.reviewCount,
-    sold: parseInt(product.productData.sold.replace(/[^0-9]/g, '')) * (product.productData.sold.includes('K') ? 1000 : 1),
-    store: {
-      id: `store-${product.brand.toLowerCase().replace(/\s+/g, '-')}`,
-      name: product.brand,
-      location: 'Jakarta',
-    },
-  }));
+// Shows all original market products + new standalone products
+// Returns in original order for SSR (no hydration mismatch)
+const getMarketProductsOriginalOrder = (): Product[] => {
+  return Object.values(productsData)
+    .filter((product) => !POST_ONLY_SLUGS.includes(product.slug))
+    .map((product) => ({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      discount: product.originalPrice
+        ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+        : 0,
+      image: product.productImages[0],
+      images: product.productImages.map((url) => ({ url })),
+      imageTall: !NORMAL_IMAGE_PRODUCTS.includes(product.slug),
+      isOfficial: true,
+      category: product.productData.category,
+      description: product.description,
+      stock: product.productData.stock,
+      rating: product.productData.rating,
+      reviewCount: product.productData.reviewCount,
+      sold: parseInt(product.productData.sold.replace(/[^0-9]/g, '')) * (product.productData.sold.includes('K') ? 1000 : 1),
+      store: {
+        id: `store-${product.brand.toLowerCase().replace(/\s+/g, '-')}`,
+        name: product.brand,
+        location: 'Jakarta',
+      },
+    }));
 };
 
-// Market products with our real product data
-const MARKET_PRODUCTS = getMarketProducts();
+// Get original order products for SSR
+const MARKET_PRODUCTS_ORIGINAL = getMarketProductsOriginalOrder();
+
+// Shuffle array using Fisher-Yates algorithm
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
 
 export default function ExplorePage() {
-  const [currentView, setCurrentView] = useState<'explore' | 'market'>('explore');
-  const [currentTab, setCurrentTab] = useState('foryou');
+  const { setHideBottomNav } = useBottomNav();
+  const [currentView, setCurrentView] = useState<'scroll' | 'explore' | 'market'>('scroll');
+  const [currentTab, setCurrentTab] = useState('For You');
+  const [marketProducts, setMarketProducts] = useState<Product[]>(MARKET_PRODUCTS_ORIGINAL);
+  const [isClient, setIsClient] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
-  const handleViewChange = useCallback((view: 'explore' | 'market') => {
+  // Shuffle market products on client after mount
+  useEffect(() => {
+    setIsClient(true);
+    setMarketProducts(shuffleArray(MARKET_PRODUCTS_ORIGINAL));
+  }, []);
+
+  // Hide bottom nav when in scroll view (has its own bottom bar)
+  useEffect(() => {
+    setHideBottomNav(currentView === 'scroll');
+  }, [currentView, setHideBottomNav]);
+
+  const handleViewChange = useCallback((view: 'scroll' | 'explore' | 'market') => {
     setCurrentView(view);
   }, []);
 
   const handleTabChange = useCallback((tab: string) => {
-    const normalizedTab = tab.toLowerCase().replace(' ', '');
-    setCurrentTab(normalizedTab);
+    setCurrentTab(tab);
   }, []);
 
   const handleLastTabReached = useCallback(() => {
@@ -69,25 +108,21 @@ export default function ExplorePage() {
 
   const renderModeContent = () => {
     switch (currentTab) {
-      case 'foryou':
+      case 'For You':
+      case 'Following':
+      case 'Korea':
+      case 'Workwear':
+      case 'Sportswear':
+      case 'Performative':
+      case 'Muslimwear':
         return <ForYouMode />;
-      case 'video':
-        return <VideoMode />;
-      case 'live':
-        return <LiveMode />;
-      case 'nearby':
-        return <NearbyMode />;
-      case 'series':
-        return <SeriesMode />;
-      case 'travel':
-        return <TravelMode />;
       default:
         return <ForYouMode />;
     }
   };
 
   return (
-    <div className="bg-gray-50" style={{ height: '100vh', overflow: 'hidden' }}>
+    <div className="bg-gray-50" style={{ height: '100dvh', overflow: 'hidden' }}>
       <AppHeader
         currentView={currentView}
         onViewChange={handleViewChange}
@@ -95,14 +130,20 @@ export default function ExplorePage() {
 
       <div 
         ref={containerRef}
-        className="overflow-auto"
+        className={`overflow-auto ${currentView === 'scroll' ? 'fixed inset-0' : ''}`}
         style={{ 
-          height: 'calc(100vh - 56px)',
-          paddingTop: '56px',
-          boxSizing: 'border-box'
+          height: currentView === 'scroll' ? '100dvh' : 'calc(100dvh - 56px)',
+          paddingTop: currentView === 'scroll' ? '0' : '56px',
+          paddingBottom: currentView === 'scroll' ? '0' : '0',
+          boxSizing: 'border-box',
+          zIndex: currentView === 'scroll' ? 60 : undefined
         }}
       >
-        {currentView === 'explore' ? (
+        {currentView === 'scroll' ? (
+          <div className="h-full relative">
+            <ScrollVideoFeed videos={mockLiveShoppingVideos} onSwipeBack={() => setCurrentView('explore')} />
+          </div>
+        ) : currentView === 'explore' ? (
           <>
             <div className="sticky top-0 z-40 bg-white">
               <ExploreSubNav
@@ -116,20 +157,9 @@ export default function ExplorePage() {
           <>
             <MarketSubNav />
             <CategoryGrid />
-            <InfiniteProductFeed initialProducts={MARKET_PRODUCTS} hasMore={true} />
+            <InfiniteProductFeed initialProducts={marketProducts} hasMore={true} />
           </>
         )}
-
-        {/* Page Indicators */}
-        <motion.div 
-          className="fixed bottom-20 left-0 right-0 flex justify-center gap-1.5 z-30 pointer-events-none"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-        >
-          <div className={`h-1 rounded-full ${currentView === 'explore' ? 'w-6 bg-gray-900' : 'w-1 bg-gray-300'}`} />
-          <div className={`h-1 rounded-full ${currentView === 'market' ? 'w-6 bg-gray-900' : 'w-1 bg-gray-300'}`} />
-        </motion.div>
       </div>
     </div>
   );
