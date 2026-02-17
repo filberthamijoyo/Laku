@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Video, Plus, ShoppingCart, User } from 'lucide-react';
+import { Home, Store, Plus, ShoppingCart, User } from 'lucide-react';
 
 export function BottomNav() {
   const pathname = usePathname();
@@ -15,7 +15,7 @@ export function BottomNav() {
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-[70] bg-white border-t border-gray-200">
-        <div className="flex items-center justify-around h-16 px-2">
+        <div className="flex items-center justify-around h-20 px-2">
           {/* Beranda */}
           <Link
             href="/explore"
@@ -31,17 +31,17 @@ export function BottomNav() {
             <span className="text-xs text-gray-600">Beranda</span>
           </Link>
 
-          {/* Video */}
+          {/* Market */}
           <Link
-            href="/video"
+            href="/market"
             className="flex flex-col items-center gap-1 flex-1"
           >
-            <Video
+            <Store
               className={`w-6 h-6 ${
-                pathname === '/video' ? 'text-gray-900' : 'text-gray-500'
+                pathname === '/market' ? 'text-gray-900' : 'text-gray-500'
               }`}
             />
-            <span className="text-xs text-gray-600">Video</span>
+            <span className="text-xs text-gray-600">Market</span>
           </Link>
 
           {/* Create Button */}

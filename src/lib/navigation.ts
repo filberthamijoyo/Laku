@@ -1,6 +1,6 @@
 import {
   Home,
-  Video,
+  Store,
   Bell,
   ShoppingCart,
   User,
@@ -28,10 +28,10 @@ export const MAIN_NAV_ITEMS: NavItem[] = [
     badge: false,
   },
   {
-    id: 'video',
-    labelKey: 'nav.video',
-    icon: Video,
-    href: '/video',  // Real route now
+    id: 'market',
+    labelKey: 'nav.market',
+    icon: Store,
+    href: '/market',
     badge: false,
   },
   {

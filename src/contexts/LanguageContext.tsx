@@ -14,7 +14,7 @@ const translations = {
   id: {
     // Navigation
     'nav.home': 'Beranda',
-    'nav.video': 'Video',
+    'nav.market': 'Market',
     'nav.messages': 'Pesan',
     'nav.cart': 'Keranjang',
     'nav.profile': 'Profil',
@@ -218,7 +218,7 @@ const translations = {
   en: {
     // Navigation
     'nav.home': 'Home',
-    'nav.video': 'Video',
+    'nav.market': 'Market',
     'nav.messages': 'Messages',
     'nav.cart': 'Cart',
     'nav.profile': 'Profile',
