@@ -19,7 +19,6 @@ import { ScrollVideoFeed } from '@/components/scroll/ScrollVideoFeed';
 import { mockLiveShoppingVideos } from '@/lib/mock-live-shopping-data';
 import { useBottomNav } from '@/components/layouts/BottomNavContext';
 import type { Product } from '@/types';
-import { OutfitOfTheDay } from '@/components/explore/OutfitOfTheDay';
 
 // Products to EXCLUDE from market (these are posts only)
 const POST_ONLY_SLUGS = [
@@ -250,14 +249,14 @@ export default function ExplorePage() {
       case 'Sportswear':
       case 'Performative':
       case 'Muslimwear':
-        return <ForYouMode />;
+        return <ForYouMode currentTab={currentTab} />;
       default:
-        return <ForYouMode />;
+        return <ForYouMode currentTab={currentTab} />;
     }
   };
 
   return (
-    <div className="bg-gray-50 relative" style={{ height: '100dvh', overflow: 'hidden' }}>
+    <div className="bg-white relative" style={{ height: '100dvh', overflow: 'hidden' }}>
       <AppHeader
         currentView={currentView}
         onViewChange={handleViewChange}
@@ -299,7 +298,7 @@ export default function ExplorePage() {
         ) : (
           <>
             {currentView === 'market' && (
-              <div className="relative w-full overflow-hidden" style={{ height: '250px' }}>
+              <div className="relative w-full overflow-hidden" style={{ height: '200px' }}>
                 {/* Banner images with seamless circular wrapping */}
                 {bannerImages.map((image, index) => (
                   <div
@@ -315,7 +314,8 @@ export default function ExplorePage() {
                     style={{
                       backgroundImage: `url('${image}')`,
                       transform: `translateX(${getTransformPosition(index)}%)`,
-                      zIndex: index === currentBanner ? 1 : 0
+                      zIndex: index === currentBanner ? 1 : 0,
+                      height: '200px'
                     }}
                   />
                 ))}
@@ -344,7 +344,6 @@ export default function ExplorePage() {
                 </div>
               </div>
             )}
-            <OutfitOfTheDay />
             <CategoryGrid />
             <InfiniteProductFeed initialProducts={marketProducts} hasMore={true} />
           </>
