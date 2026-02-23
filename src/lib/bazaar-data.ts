@@ -11,6 +11,7 @@ export interface BazaarBrand {
     row: number;
     col: number;
   };
+  discount?: number; // optional discount percentage
 }
 
 export interface BazaarOutfit {

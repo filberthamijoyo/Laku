@@ -154,7 +154,7 @@ export default function BazaarDetailPage() {
                 View Store
               </Link>
               <button 
-                onClick={() => setActiveTab('map')}
+                onClick={() => router.push(`/bazaar/${bazaarId}/map`)}
                 className="px-4 py-3 border border-gray-300 rounded-lg flex items-center justify-center gap-2"
               >
                 <Navigation className="w-5 h-5" />

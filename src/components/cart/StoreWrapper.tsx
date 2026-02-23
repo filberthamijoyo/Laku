@@ -11,9 +11,10 @@ interface Props {
   onSelectAll: (checked: boolean) => void;
   onToggle: (productId: string) => void;
   onDelete: (productId: string) => void;
+  onQuantityChange?: (productId: string, quantity: number) => void;
 }
 
-export function StoreWrapper({ store, onSelectAll, onToggle, onDelete }: Props) {
+export function StoreWrapper({ store, onSelectAll, onToggle, onDelete, onQuantityChange }: Props) {
   return (
     <div className="rounded-lg overflow-visible bg-white">
       <div className="space-y-[10px]">
@@ -31,6 +32,7 @@ export function StoreWrapper({ store, onSelectAll, onToggle, onDelete }: Props) 
               store={store}
               onToggle={onToggle}
               onDelete={onDelete}
+              onQuantityChange={onQuantityChange}
             />
           ))}
         </div>
