@@ -4,107 +4,103 @@ import { useState, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Store, StoreFilter, StoreSortOption, StoreProduct } from '@/types/store';
+import { Product } from '@/types';
 import { ChevronDown, Filter, Grid, List, ArrowUp, ArrowDown } from 'lucide-react';
 import { formatPrice, formatRating } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
+import { ProductCard } from '@/components/shared/ProductCard';
 import CategoryRankingProduct from './CategoryRankingProduct';
+
+// Helper to convert sold string (e.g., "1.2k+") to number
+function parseSoldString(sold: string | number): number {
+  if (typeof sold === 'number') return sold;
+  if (!sold) return 0;
+  
+  const lower = sold.toLowerCase().replace('+', '');
+  if (lower.includes('k')) {
+    return Math.round(parseFloat(lower) * 1000);
+  }
+  if (lower.includes('m')) {
+    return Math.round(parseFloat(lower) * 1000000);
+  }
+  return parseInt(lower) || 0;
+}
  
 function ProductDivisionInner({ active, onChange }: { active: 'produk' | 'kategori'; onChange?: (v: 'produk' | 'kategori') => void }) {
-  const touchStartX = useRef<number | null>(null);
-  const touchEndX = useRef<number | null>(null);
-  const minSwipeDistance = 50; // px
-
-  // Fixed/sticky fallback using JS measurement (works even if CSS sticky is broken by transforms/overflow)
-  const wrapperRef = useRef<HTMLDivElement | null>(null);
-  const placeholderRef = useRef<HTMLDivElement | null>(null);
-  const [isFixed, setIsFixed] = useState(false);
-  const [fixedStyle, setFixedStyle] = useState<React.CSSProperties | undefined>(undefined);
-
-  const updateFixedState = () => {
-    const el = wrapperRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const shouldFix = rect.top <= 0;
-    if (shouldFix !== isFixed) {
-      setIsFixed(shouldFix);
-      if (placeholderRef.current) placeholderRef.current.style.height = shouldFix ? `${rect.height}px` : '0px';
-    }
-    if (shouldFix) {
-      setFixedStyle({
-        position: 'fixed',
-        top: 0,
-        left: rect.left,
-        width: rect.width,
-        zIndex: 20,
-      });
-    } else {
-      setFixedStyle(undefined);
-    }
-  };
-
-  useLayoutEffect(() => {
-    updateFixedState();
-  }, []);
+  // Simple swipe handler
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  // Sticky state - becomes sticky when scrolled past the fixed header (56px)
+  const [isSticky, setIsSticky] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const originalTopRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const onScrollOrResize = () => {
-      updateFixedState();
+    const handleScroll = () => {
+      if (containerRef.current) {
+        // Store the original top position on first load
+        if (originalTopRef.current === null) {
+          originalTopRef.current = containerRef.current.getBoundingClientRect().top + window.scrollY;
+        }
+        
+        // Calculate scroll position relative to original position
+        const scrollY = window.scrollY;
+        const threshold = originalTopRef.current - 56; // 56px is the fixed header height
+        
+        // Be sticky when scrolled past the threshold (scrollY > threshold)
+        // Remove sticky when scrolled back to top (scrollY <= threshold)
+        setIsSticky(scrollY > threshold);
+      }
     };
-    window.addEventListener('scroll', onScrollOrResize, { passive: true });
-    window.addEventListener('resize', onScrollOrResize);
-    onScrollOrResize();
-    return () => {
-      window.removeEventListener('scroll', onScrollOrResize);
-      window.removeEventListener('resize', onScrollOrResize);
-    };
-  }, [isFixed]);
 
-  useEffect(() => {
-    const ro = new ResizeObserver(() => {
-      updateFixedState();
-    });
-    if (wrapperRef.current) ro.observe(wrapperRef.current);
-    return () => ro.disconnect();
+    // Store original position on mount
+    if (containerRef.current && originalTopRef.current === null) {
+      originalTopRef.current = containerRef.current.getBoundingClientRect().top + window.scrollY;
+    }
+
+    // Check initial position
+    handleScroll();
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    touchEndX.current = null;
-    touchStartX.current = e.touches[0].clientX;
+    setTouchStart(e.touches[0].clientX);
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    if (touchStartX.current === null || touchEndX.current === null) return;
-    const distance = touchStartX.current - touchEndX.current;
-    if (Math.abs(distance) < minSwipeDistance) return;
-    if (distance > 0) {
-      // swiped left -> go to 'produk'
-      if (active !== 'produk') onChange?.('produk');
-    } else {
-      // swiped right -> go to 'kategori'
-      if (active !== 'kategori') onChange?.('kategori');
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStart === null) return;
+    const touchEnd = e.changedTouches[0].clientX;
+    const diff = touchStart - touchEnd;
+    
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        // swiped left -> go to 'produk'
+        if (active !== 'produk') onChange?.('produk');
+      } else {
+        // swiped right -> go to 'kategori'
+        if (active !== 'kategori') onChange?.('kategori');
+      }
     }
-
-    touchStartX.current = null;
-    touchEndX.current = null;
+    setTouchStart(null);
   };
 
   return (
     <>
-      <div ref={placeholderRef} aria-hidden style={{ height: 0 }} />
-      <div ref={wrapperRef} className="bg-white" style={fixedStyle}>
-        <div
-          className="flex border-b border-gray-200"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
+      {/* Spacer to reserve space when sticky - only render when sticky */}
+      {isSticky && <div className="h-[50px] bg-white" />}
+      
+      <div 
+        ref={containerRef}
+        className={`flex border-b border-gray-200 bg-white transition-all duration-300 ${
+          isSticky ? 'fixed top-14 left-0 right-0 z-40' : 'relative'
+        }`}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <button
           onClick={() => onChange?.('produk')}
-          className={`flex-1 py-[1px] h-[50px] text-center transition-colors ${
+          className={`flex-1 py-[1px] h-[50px] text-center ${
             active === 'produk'
               ? 'text-gray-900 border-b-2 border-red-600 font-semibold'
               : 'text-gray-600/50'
@@ -115,7 +111,7 @@ function ProductDivisionInner({ active, onChange }: { active: 'produk' | 'katego
 
         <button
           onClick={() => onChange?.('kategori')}
-          className={`flex-1 py-[1px] h-[50px] text-center transition-colors ${
+          className={`flex-1 py-[1px] h-[50px] text-center ${
             active === 'kategori'
               ? 'text-gray-900 border-b-2 border-red-600 font-semibold'
               : 'text-gray-600/50'
@@ -123,7 +119,6 @@ function ProductDivisionInner({ active, onChange }: { active: 'produk' | 'katego
         >
           Kategori
         </button>
-      </div>
       </div>
     </>
   );
@@ -338,7 +333,29 @@ export function MobileStoreProducts({
                 {viewMode === 'grid' ? (
                   <div className="grid grid-cols-2 gap-3">
                     {filteredProducts.map((product) => (
-                      <ProductCard key={product.id} product={product} />
+                      <ProductCard 
+                        key={product.id} 
+                        product={{
+                          ...product,
+                          // Map StoreProduct to Product format
+                          slug: product.id,
+                          images: [product.image],
+                          category: product.category,
+                          description: '',
+                          stock: 0,
+                          reviewCount: product.reviewCount,
+                          // Convert sold string to number for display
+                          sold: parseSoldString(product.sold),
+                          // Show LAKU badge if store is verified
+                          isOfficial: store.verified,
+                          // Required store property
+                          store: {
+                            id: store.id,
+                            name: store.name,
+                            location: store.location,
+                          },
+                        } as unknown as Product} 
+                      />
                     ))}
                   </div>
                 ) : (
@@ -358,7 +375,7 @@ export function MobileStoreProducts({
             </div>
 
             {/* Kategori pane: left = categories, right = products for selected category */}
-            <div style={{ width: '50%' }} className="pr-3 bg-gray-50">
+            <div style={{ width: '50%' }} className="pr-3 bg-white">
               <div className="flex">
                 {/* Left: category list */}
                 <div className="w-[100px] border-r border-gray-100 pt-2 pb-2">
@@ -399,68 +416,6 @@ export function MobileStoreProducts({
         </div>
       </div>
     </div>
-  );
-}
-
-function ProductCard({ product }: { product: StoreProduct }) {
-  return (
-    <Link href={`/product/${product.id}`} className="block w-full">
-      <div className="bg-white rounded-lg overflow-hidden border border-gray-100 shadow-sm hover:shadow-md transition-shadow w-full">
-        <div className="w-full bg-gray-100 overflow-hidden rounded-t-lg">
-          <div className="relative w-full h-48">
-            <Image
-              src={product.image}
-              alt={product.name}
-              fill
-              className="object-cover"
-              sizes="50vw"
-            />
-            {/* Small corner badges */}
-            <div className="absolute top-2 left-2 flex flex-col gap-1" style={{ zIndex: 40 }}>
-              {product.isNew && (
-                <span className="bg-green-500 text-white text-xs px-1.5 py-0.5 rounded font-medium">
-                  New
-                </span>
-              )}
-              {product.isBestSeller && (
-                <span className="bg-orange-500 text-white text-xs px-1.5 py-0.5 rounded font-medium">
-                  Best Seller
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-2 min-w-0" style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-1">
-            {product.name}
-          </h3>
-
-                  <div className="flex items-center gap-1 text-xs">
-                    <span className="text-yellow-400">★</span>
-                    <span className="text-gray-900">{formatRating(product.rating)}</span>
-                    <span className="text-gray-400">|</span>
-                    <span className="text-gray-600">{product.sold} terjual</span>
-                  </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="text-base font-bold text-red-600">
-              {formatPrice(product.price)}
-            </span>
-            {product.originalPrice && (
-              <span
-                className="text-sm text-gray-500 line-through"
-                style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
-              >
-                {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 0 }).format(product.originalPrice)}
-              </span>
-            )}
-          </div>
-
-          
-        </div>
-      </div>
-    </Link>
   );
 }
 

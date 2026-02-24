@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, Calendar, Shirt, ExternalLink, Navigation, ShoppingBag } from 'lucide-react';
 import { productsData, ProductData } from '@/lib/products-data';
-import { bazaarData, Bazaar, BazaarBrand, BazaarOutfit } from '@/lib/bazaar-data';
+import { bazaarData, Bazaar, BazaarBrand, BazaarOutfit, Thread } from '@/lib/bazaar-data';
 import { BottomNavBazaar } from '@/components/layouts/BottomNavBazaar';
+import { ThreadBazaar } from '@/components/bazaar/ThreadBazaar';
+import { BazaarGallery } from '@/components/bazaar/BazaarGallery';
 
 export default function BazaarDetailPage() {
   const params = useParams();
@@ -18,6 +21,31 @@ export default function BazaarDetailPage() {
   
   const [selectedBrand, setSelectedBrand] = useState<BazaarBrand | null>(null);
   const [selectedOutfit, setSelectedOutfit] = useState<{ id: string; name: string; items: { product: ProductData; brand: BazaarBrand }[] } | null>(null);
+  const [newThreadContent, setNewThreadContent] = useState('');
+  const [userThreads, setUserThreads] = useState<Thread[]>([]);
+  const [activeTab, setActiveTab] = useState<'threads' | 'map'>('threads');
+
+  // Handle posting a new thread
+  const handlePostThread = () => {
+    if (!newThreadContent.trim()) return;
+
+    const newThread = {
+      id: `user-${Date.now()}`,
+      userId: 'current-user',
+      userName: 'You',
+      userAvatar: '/avatar-default.png',
+      content: newThreadContent,
+      timestamp: 'Just now',
+      likes: 0,
+      isLiked: false,
+      replies: [],
+      replyCount: 0
+    };
+
+    // Add new thread to the top of the list
+    setUserThreads([newThread, ...userThreads]);
+    setNewThreadContent('');
+  };
 
   if (!bazaar) {
     return (
@@ -57,75 +85,104 @@ export default function BazaarDetailPage() {
 
   return (
     <div className="min-h-screen bg-white pb-24">
-      {/* Welcome Header */}
-      <div className="bg-gradient-to-r from-[#ff2742] to-pink-500 text-white p-4 pt-12">
-        <button 
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-white/80 hover:text-white mb-4"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Back</span>
-        </button>
+      {/* Welcome Header - with bazaar background image */}
+      <div className="relative text-white p-4 pt-12 h-[180px]">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src={bazaar.image}
+            alt={bazaar.name}
+            fill
+            className="object-cover"
+            priority
+          />
+          {/* Overlay for text readability */}
+          <div className="absolute inset-0 bg-black/50" />
+        </div>
         
-        <div className="text-center">
-          <h1 className="text-3xl font-bold">Welcome to</h1>
-          <h2 className="text-2xl font-bold mt-1">{bazaar.name}!</h2>
-          <div className="flex items-center justify-center gap-4 mt-4 text-sm">
-            <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              <span>{bazaar.startDate}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              <span>{bazaar.location}</span>
+        {/* Header Content */}
+        <div className="relative z-10">
+          <button 
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-white/80 hover:text-white mb-4"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back</span>
+          </button>
+          
+          <div className="text-center">
+            <h1 className="text-3xl font-bold">Welcome to</h1>
+            <h2 className="text-2xl font-bold mt-1">{bazaar.name}!</h2>
+            <div className="flex items-center justify-center gap-4 mt-4 text-sm">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                <span>{bazaar.startDate}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <MapPin className="w-4 h-4" />
+                <span>{bazaar.location}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
+      {bazaar.gallery && bazaar.gallery.length > 0 && (
+        <BazaarGallery images={bazaar.gallery} bazaarName={bazaar.name} />
+      )}
 
-      {/* Highlights Content */}
-      <div className="p-4">
-        <div className="mb-4">
-          <h3 className="font-semibold text-gray-900">Bazaar Exclusive Outfits</h3>
-          <p className="text-sm text-gray-500">Curated looks from brands at this bazaar</p>
+      {/* Highlights Content - Threads */}
+      <div className="pb-4">
+        {/* Create Thread Section - First */}
+        <div className="px-4 py-3">
+          <div className="bg-gray-50 rounded-xl p-4">
+            <h3 className="font-semibold text-gray-900 mb-2">Share Your Experience</h3>
+            <textarea
+              placeholder="Tell us about your bazaar experience..."
+              className="w-full p-3 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#ff2742] focus:border-transparent"
+              rows={3}
+              value={newThreadContent}
+              onChange={(e) => setNewThreadContent(e.target.value)}
+            />
+            <div className="flex items-center justify-between mt-3">
+              <button className="flex items-center gap-2 text-gray-500 hover:text-[#ff2742] transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span className="text-sm">Add Photo</span>
+              </button>
+              <button 
+                className="bg-[#ff2742] text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#e61e3a] transition-colors"
+                onClick={handlePostThread}
+                disabled={!newThreadContent.trim()}
+              >
+                Post
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Discussion Section Header - Second */}
+        <div className="px-4 py-3">
+          <h2 className="font-semibold text-gray-900">Discussion</h2>
+          <p className="text-base font-semibold text-gray-500">See what people are talking about</p>
         </div>
         
-        <div className="space-y-4">
-          {bazaarOutfits.map(outfit => (
-            <div 
-              key={outfit.id}
-              onClick={() => setSelectedOutfit(outfit)}
-              className="bg-white border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-[#ff2742]/50 transition-colors"
-            >
-              <h4 className="font-semibold text-gray-900">{outfit.name}</h4>
-              <div className="flex gap-2 mt-3 overflow-x-auto">
-                {outfit.items.map((item, idx) => (
-                  <div key={idx} className="flex-shrink-0">
-                    <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
-                      <img 
-                        src={item.product.productImages[0]} 
-                        alt={item.product.name}
-                        className="w-full h-full object-contain p-1"
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1 truncate w-20">{item.product.brand}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 mt-3 text-xs text-[#ff2742]">
-                <span>View in store</span>
-                <ArrowLeft className="w-3 h-3 rotate-180" />
-              </div>
-            </div>
-          ))}
-          
-          {bazaarOutfits.length === 0 && (
+        {/* Show user threads first, then bazaar threads */}
+        {userThreads.length > 0 && (
+          <ThreadBazaar threads={userThreads} />
+        )}
+
+        {bazaar.threads && bazaar.threads.length > 0 ? (
+          <ThreadBazaar threads={bazaar.threads} />
+        ) : (
+          userThreads.length === 0 && (
             <div className="text-center py-8">
               <Shirt className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500">No outfits available yet</p>
+              <p className="text-gray-500">No discussions yet</p>
+              <p className="text-sm text-gray-400 mt-1">Be the first to start a conversation!</p>
             </div>
-          )}
-        </div>
+          )
+        )}
       </div>
 
       {/* Brand Detail Modal */}
@@ -154,7 +211,7 @@ export default function BazaarDetailPage() {
                 View Store
               </Link>
               <button 
-                onClick={() => router.push(`/bazaar/${bazaarId}/map`)}
+                onClick={() => setActiveTab('map')}
                 className="px-4 py-3 border border-gray-300 rounded-lg flex items-center justify-center gap-2"
               >
                 <Navigation className="w-5 h-5" />

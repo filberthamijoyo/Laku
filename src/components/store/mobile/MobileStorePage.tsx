@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Store, StoreTab, StoreFilter, StoreSortOption } from '@/types/store';
 
 import { MobileStoreBody } from './MobileStoreBody';
@@ -10,6 +10,7 @@ import MobileStoreTags from './MobileStoreTags';
 import { MobileStoreBioBackground } from './MobileStoreBioBackground';
 import { MobileStoreBioName } from './MobileStoreBioName';
 import { MobileStoreBioCaption } from './MobileStoreBioCaption';
+import { StoreHeader } from './StoreHeader';
 import MobileStoreProductsTagsHeader from './MobileStoreProductsTagsHeader';
 
 
@@ -23,6 +24,22 @@ export function MobileStorePage({ store, showBottomNav = true }: MobileStorePage
   const [filters, setFilters] = useState<StoreFilter>({});
   const [sortBy, setSortBy] = useState<StoreSortOption>('recommended');
   const [isFollowing, setIsFollowing] = useState<boolean>(!!store.isFollowing);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const maxScroll = 300; // Match height of store bio section
+      // Calculate progress from 0 to 1 based on scroll position
+      const progress = Math.min(Math.max(scrollTop / maxScroll, 0), 1);
+      setScrollProgress(progress);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Initial calculation
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const toggleFollow = () => {
     setIsFollowing((s) => !s);
@@ -50,6 +67,9 @@ export function MobileStorePage({ store, showBottomNav = true }: MobileStorePage
           store={store}
         />
       )}
+      {/* Sticky header - placed outside MobileStoreBioBackground so it stays fixed at top */}
+      {activeTab === 'home' && <StoreHeader store={store} scrollProgress={scrollProgress} />}
+
       {/* Sticky header for selected tabs - placed above tab content to avoid ancestor overflow */}
       {(['home', 'products', 'tags'] as StoreTab[]).includes(activeTab) && (
         <>
@@ -59,7 +79,7 @@ export function MobileStorePage({ store, showBottomNav = true }: MobileStorePage
               <MobileStoreBioCaption store={store} isFollowing={isFollowing} onFollow={toggleFollow} />
             </MobileStoreBioBackground>
           ) : (
-            <MobileStoreProductsTagsHeader store={store} expandedHeight={130} isFollowing={isFollowing} onFollow={toggleFollow} />
+            <MobileStoreProductsTagsHeader store={store} expandedHeight={147} isFollowing={isFollowing} onFollow={toggleFollow} />
           )}
         </>
       )}

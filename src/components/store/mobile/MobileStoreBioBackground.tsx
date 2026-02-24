@@ -137,18 +137,18 @@ export function MobileStoreBioBackground({
   return (
     <div
       ref={containerRef}
-      className="relative px-4 pb-0 overflow-visible"
+      className="relative pb-0 overflow-visible h-auto"
       style={{
         ...bgStyle,
-        // apply measured height; if not measured yet, fallback to undefined so layout can size naturally
-        height: typeof height === 'number' ? `${height}px` : undefined,
+        // Don't set fixed height - let content determine height for sticky to work
+        minHeight: typeof height === 'number' ? `${height}px` : undefined,
       }}
     >
       {/* black overlay (30%) */}
       <div className="absolute top-0 left-0 w-full h-full bg-black/30 pointer-events-none" />
 
       {/* content that we measure */}
-      <div ref={contentRef} className="relative z-10 flex flex-col">
+      <div ref={contentRef} className="relative z-10 flex flex-col pt-[60px]">
         {children}
       </div>
     </div>

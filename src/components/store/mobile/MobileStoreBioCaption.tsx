@@ -1,6 +1,6 @@
  'use client';
 
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, MapPin } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Store } from '@/types/store';
 import { getStoreBySlug } from '@/lib/stores-data';
@@ -53,10 +53,18 @@ export function MobileStoreBioCaption({ store, onFollow, onChat, isFollowing }: 
   if (!caption) return null;
 
   return (
-    <div className="mt-[12px]">
+    <div className="mt-[12px] ml-4 mr-4 pl-4 pr-4">
       <div className="mt-[20px] w-[230px] text-[12px] text-white leading-snug pt-2.5 pb-2.5">
         {caption}
       </div>
+
+      {/* Store location */}
+      {store.location && (
+        <div className="flex items-center gap-1 mt-1">
+          <MapPin className="w-3.5 h-3.5 text-white/80" />
+          <span className="text-xs text-white/80">{store.location}</span>
+        </div>
+      )}
 
       {/* Stats row with follow/chat buttons to the right */}
       <div className="mt-[20px] w-full">

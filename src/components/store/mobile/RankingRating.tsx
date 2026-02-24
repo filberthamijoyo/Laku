@@ -37,14 +37,6 @@ export default function RankingRating({ top = 5, products }: Props) {
           <div className="flex gap-4 items-stretch">
             <div className="relative w-[120px] h-[120px] rounded overflow-hidden flex-shrink-0">
               <Image src={p.image} alt={p.name} fill className="object-cover" />
-              <div
-                className={`absolute top-0 left-0 badge-ribbon ${
-                  i === 0 ? 'gold' : 'plain text-amber-700'
-                }`}
-              >
-                <span className="ribbon-top">TOP</span>
-                <span className="ribbon-num">{i + 1}</span>
-              </div>
             </div>
 
             <div className="flex-1 flex flex-col justify-between">
