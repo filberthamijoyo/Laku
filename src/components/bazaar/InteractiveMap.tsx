@@ -34,17 +34,19 @@ export function InteractiveMap({ mapImage, brands, bazaarName, booths }: Interac
   const touchStartRef = useRef<{ distance: number; center: { x: number; y: number } } | null>(null);
 
   // Calculate distance between two touch points
-  const getTouchDistance = (touches: TouchList) => {
-    const dx = touches[0].clientX - touches[1].clientX;
-    const dy = touches[0].clientY - touches[1].clientY;
+  const getTouchDistance = (touches: React.TouchList) => {
+    const touchArray = Array.from(touches);
+    const dx = touchArray[0].clientX - touchArray[1].clientX;
+    const dy = touchArray[0].clientY - touchArray[1].clientY;
     return Math.sqrt(dx * dx + dy * dy);
   };
 
   // Calculate center point between two touches
-  const getTouchCenter = (touches: TouchList) => {
+  const getTouchCenter = (touches: React.TouchList) => {
+    const touchArray = Array.from(touches);
     return {
-      x: (touches[0].clientX + touches[1].clientX) / 2,
-      y: (touches[0].clientY + touches[1].clientY) / 2
+      x: (touchArray[0].clientX + touchArray[1].clientX) / 2,
+      y: (touchArray[0].clientY + touchArray[1].clientY) / 2
     };
   };
 

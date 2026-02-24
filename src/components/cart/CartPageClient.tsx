@@ -107,13 +107,6 @@ export function CartPageClient({ initialCart }: Props) {
                     .filter(s => s.products.length > 0)
                   );
                 }}
-                onQuantityChange={(productId: string, quantity: number) => {
-                  setStores(stores.map(s =>
-                    s.storeId === store.storeId
-                      ? { ...s, products: s.products.map(p => p.id === productId ? { ...p, quantity } : p) }
-                      : s
-                  ));
-                }}
               />
             ))
           )
